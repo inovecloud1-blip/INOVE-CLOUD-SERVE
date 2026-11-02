@@ -1,0 +1,39 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: pt_BR.UTF-8
+  keyboard:
+    layout: br
+  network:
+    network:
+      version: 2
+      ethernets:
+        eth0:
+          dhcp4: true
+  storage:
+    layout:
+      name: direct
+  identity:
+    hostname: inovecloudos
+    realname: InoveCloud Administrator
+    username: satoshi
+    password: "$6$rounds=4096$inovesalt$5Z5vQzRz0mY3E2H8hK7vL9mN2xQ1wE4rT7yU0iO3pA6sD9fG2hJ5kL8zX1cV4bN7m"
+  ssh:
+    install-server: true
+    allow-pw: true
+  packages:
+    - docker.io
+    - docker-compose-v2
+    - git
+    - curl
+    - ufw
+    - nodejs
+    - npm
+  late-commands:
+    - curtin in-target -- target systemctl enable docker
+    - curtin in-target -- target systemctl start docker
+    - curtin in-target -- target ufw allow 22/tcp
+    - curtin in-target -- target ufw allow 80/tcp
+    - curtin in-target -- target ufw allow 443/tcp
+    - curtin in-target -- target ufw allow 3000/tcp
+    - curtin in-target -- target ufw --force enable

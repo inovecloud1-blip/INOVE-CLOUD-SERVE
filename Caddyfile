@@ -1,0 +1,8 @@
+inovecloud.local {
+    reverse_proxy inovecloud-core:3000
+}
+
+# Catch-all wildcard for installed app subdomains or ports
+:80 {
+    reverse_proxy inovecloud-core:3000
+}

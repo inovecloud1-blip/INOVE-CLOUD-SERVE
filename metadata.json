@@ -1,0 +1,6 @@
+{
+  "name": "InoveCloud OS",
+  "description": "Sistema de servidor doméstico e nuvem pessoal estilo Umbrel (Alpine Linux, Docker, Node.js, Caddy)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
