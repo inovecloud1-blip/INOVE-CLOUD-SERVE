@@ -1,4 +1,4 @@
-name: Build InoveCloud OS ISO
+name: Build InoveCloud OS Alpine ISO
 
 on:
   push:
@@ -6,47 +6,53 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-iso:
+  build-alpine-iso:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Dependencies
+      - name: Install ISO Building Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xorriso wget squashfs-tools p7zip-full genisoimage syslinux
+          sudo apt-get install -y xorriso squashfs-tools wget curl genisoimage syslinux isolinux p7zip-full
 
-      - name: Download Ubuntu 24.04 LTS Base ISO
+      - name: Download Alpine Linux Virt Base ISO
         run: |
-          # Use official stable Ubuntu 24.04 LTS live server ISO release URL
-          wget -O ubuntu-base.iso https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso || \
-          wget -O ubuntu-base.iso https://old-releases.ubuntu.com/releases/24.04/ubuntu-24.04-live-server-amd64.iso
+          ALPINE_VERSION="3.20.0"
+          ISO_URL="https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/x86_64/alpine-virt-${ALPINE_VERSION}-x86_64.iso"
+          echo "Downloading Alpine ISO from ${ISO_URL}..."
+          wget -O alpine-base.iso ${ISO_URL} || \
+          wget -O alpine-base.iso https://dl-cdn.alpinelinux.org/alpine/v3.20.3/releases/x86_64/alpine-virt-3.20.3-x86_64.iso
 
-      - name: Extract and Customize ISO with Autoinstall
+      - name: Extract, Customize and Inject InoveCloud OS
         run: |
-          mkdir -p iso_extract custom_iso
-          7z x ubuntu-base.iso -oiso_extract/
-          
-          # Copy user-data and meta-data for autoinstall
-          mkdir -p iso_extract/nocloud
-          cp ubuntu-iso/user-data iso_extract/nocloud/user-data
-          touch iso_extract/nocloud/meta-data
-          
-          # Rebuild ISO with xorriso
+          mkdir -p iso_extract workspace_bundle
+          7z x alpine-base.iso -oiso_extract/
+
+          # Bundle project files into workspace for offline/autoinstall deployment
+          tar --exclude='iso_extract' --exclude='.git' -czf workspace_bundle/workspace.tar.gz .
+
+          # Copy answer file and firstboot script
+          cp alpine-iso/answers iso_extract/answers
+          cp alpine-iso/firstboot.sh iso_extract/firstboot.sh
+          cp workspace_bundle/workspace.tar.gz iso_extract/workspace.tar.gz
+
+          # Rebuild ISO with hybrid boot options for VirtualBox and KVM compatibility
           cd iso_extract
-          xorriso -as mkisofs -r -V "INOVECLOUD_OS" \
+          xorriso -as mkisofs \
+            -r -V "INOVECLOUD_ALPINE" \
             -J -joliet-long -l \
-            -b boot/grub/i386-pc/eltorito.img \
-            -c boot.catalog \
+            -b boot/syslinux/isolinux.bin \
+            -c boot.cat \
             -no-emul-boot -boot-load-size 4 -boot-info-table \
-            --eltorito-alt-boot \
-            -e EFI/boot/bootx64.efi \
-            -no-emul-boot \
-            -o ../inovecloud-os-24.04.iso .
+            -eltorito-alt-boot \
+            -e boot/syslinux/efi.img \
+            -no-emul-boot -isohybrid-gpt-basdat \
+            -o ../inovecloud-alpine-os.iso .
 
       - name: Upload ISO Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: InoveCloud-OS-Ubuntu-24.04-x86_64
-          path: inovecloud-os-24.04.iso
+          name: InoveCloud-OS-Alpine-x86_64
+          path: inovecloud-alpine-os.iso

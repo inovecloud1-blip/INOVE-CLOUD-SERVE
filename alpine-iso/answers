@@ -1,0 +1,17 @@
+# Alpine Linux autoinstall answer file for InoveCloud OS
+KEYMAPOPTS="br br-abnt2"
+HOSTNAMEOPTS="inovecloudos"
+INTERFACESOPTS="auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+"
+DNSOPTS="8.8.8.8 1.1.1.1"
+TIMEZONEOPTS="America/Sao_Paulo"
+PROXYOPTS="none"
+APKREPOSOPTS="https://dl-cdn.alpinelinux.org/alpine/v3.20/main https://dl-cdn.alpinelinux.org/alpine/v3.20/community"
+SSHDOPTS="openssh"
+NTPOPTS="chrony"
+DISKOPTS="-m sys /dev/sda"
+USEROPTS="satoshi \"$6$inovesalt$5Z5vQzRz0mY3E2H8hK7vL9mN2xQ1wE4rT7yU0iO3pA6sD9fG2hJ5kL8zX1cV4bN7m\""
