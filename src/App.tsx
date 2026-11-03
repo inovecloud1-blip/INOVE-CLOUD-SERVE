@@ -5,7 +5,7 @@ import {
   ExternalLink, Shield, Cloud, Home, Film, Key, Folder, Tv, Zap, 
   Search, Plus, X, Maximize2, Minimize2, Compass, Layers, Globe, MessageSquare, Users, AlertTriangle, CheckCircle, Star,
   Moon, Bell, Bluetooth, Sun, Volume2, Lock, Power, Edit3, Image as ImageIcon, RefreshCw, Eye, WifiOff, Upload, FileText, Image, Check, Monitor,
-  ChevronLeft, ChevronRight, Clock, User
+  ChevronLeft, ChevronRight, Clock, User, Disc
 } from 'lucide-react';
 
 interface SystemStats {
@@ -38,6 +38,12 @@ const INITIAL_SERVER_APPS = [
   { id: 'nextcloud', name: 'Nextcloud', category: 'Storage', icon: '/public/assets/aistudio/images__10__15754696.png', url: 'http://inovecloudos.local:8080', installed: true, port: 8080, version: '28.0.2', screenshot: '/public/assets/aistudio/Captura_de_tela_2026-11-01_115551_8d87df87.png', description: 'Sua nuvem pessoal de arquivos, sincronização e colaboração segura.' },
   { id: 'ollama', name: 'Ollama AI (Local)', category: 'AI', icon: '/public/assets/aistudio/download__1__ba98c536.png', url: 'http://inovecloudos.local:11434', installed: true, port: 11434, version: '0.1.48', screenshot: '/public/assets/aistudio/Captura_de_tela_2026-11-01_115515_d0adf8f0.png', description: 'Modelos de linguagem privados (Llama 3, DeepSeek) rodando localmente.' },
   { id: 'romm', name: 'RomM (Game Library)', category: 'Gaming', icon: '/public/assets/aistudio/images__27__ef861017.jpg', url: 'http://inovecloudos.local:8085', installed: true, port: 8085, version: '3.2.0', screenshot: '/public/assets/aistudio/romm_fd92dfee.png', description: 'O gerenciador e biblioteca all-in-one mais poderoso para suas coleções de jogos e ROMs retrô.' },
+  { id: 'webflow', name: 'Webflow Studio', category: 'Design & Web', icon: '/public/assets/aistudio/images__21__c326363d.png', url: 'http://inovecloudos.local:8092', installed: true, port: 8092, version: '2.14.0', screenshot: '/public/assets/aistudio/webflow-cover_942ad50d.jpg', description: 'Advanced visual web development, CMS, and hosting platform with full design freedom.' },
+  { id: 'kirki', name: 'Kirki UI Builder', category: 'Design & UI', icon: '/public/assets/aistudio/download__2__5fe4b3c4.jpg', url: 'http://inovecloudos.local:8093', installed: true, port: 8093, version: '1.5.0', screenshot: '/public/assets/aistudio/kirki-cover.26d9866b_53cec69f.webp', description: 'Design without boundaries. Modern visual design system and component builder for web apps.' },
+  { id: 'appsmith', name: 'Appsmith Low-Code', category: 'Automation & Dev', icon: '/public/assets/aistudio/images__22__98c26f0c.png', url: 'http://inovecloudos.local:8094', installed: true, port: 8094, version: '1.15.0', screenshot: '/public/assets/aistudio/Blog_Cover_19c757d9.jpg', description: 'Build internal tools, dashboards, and workflows fast with low-code and JavaScript integrations.' },
+  { id: 'obsidian', name: 'Obsidian Notes Server', category: 'Productivity & Notes', icon: '/public/assets/aistudio/icon_011cee20.svg', url: 'http://inovecloudos.local:8095', installed: true, port: 8095, version: '1.8.10', screenshot: '/public/assets/aistudio/screenshot-1__3__01439fab.webp', description: 'Private and flexible writing and knowledge base app that adapts to your way of thinking (Self-hosted Server).' },
+  { id: 'chromium', name: 'Chromium Browser', category: 'Browser & Web', icon: '/public/assets/aistudio/images__24__f7b46eac.png', url: 'http://inovecloudos.local:8096', installed: true, port: 8096, version: '122.0', screenshot: '/public/assets/aistudio/images__23__92ee3318.png', description: 'Open-source browser project that aims to build a safer, faster, and more stable way to experience the web.' },
+  { id: 'blinko', name: 'Blinko Notes', category: 'Productivity & Notes', icon: '/public/assets/aistudio/icon__2__549d031b.svg', url: 'http://inovecloudos.local:8097', installed: true, port: 8097, version: '1.2.0', screenshot: '/public/assets/aistudio/screenshot-1__4__54ba5bd9.webp', description: 'Open-source, self-hosted AI note-taking and knowledge capture tool designed for fast thought archiving.' },
 ];
 
 const INITIAL_WEB_SHORTCUTS = [
@@ -121,6 +127,10 @@ export default function App() {
 
   // VNC Firefox Browser Simulator State
   const [vncUrlInput, setVncUrlInput] = useState('https://www.google.com');
+
+  // Virtual CD/DVD Optical Drive State
+  const [isoImagePath, setIsoImagePath] = useState('/home/satoshi/Downloads/inovecloud-alpine-os.iso');
+  const [cdromMounted, setCdromMounted] = useState(true);
 
   // File Manager State
   const [serverFiles, setServerFiles] = useState<ServerFile[]>(INITIAL_SERVER_FILES);
@@ -678,31 +688,31 @@ export default function App() {
             
             <div className="h-16 px-8 bg-slate-900/90 flex items-center justify-between border-b border-white/15">
               <div>
-                <div className="text-[10px] font-mono tracking-widest uppercase text-purple-400">InoveCloud OS · Q4 2026 Telemetry</div>
-                <h2 className="text-lg font-extrabold text-white tracking-tight">System Resource & Hardware Monitor</h2>
+                <div className="text-[10px] font-mono tracking-widest uppercase text-purple-400">InoveCloud OS · Telemetria em Tempo Real</div>
+                <h2 className="text-lg font-extrabold text-white tracking-tight">Monitor de Hardware e Recursos do Sistema</h2>
               </div>
-              <button onClick={() => setActiveModal(null)} className="p-2 text-slate-300 hover:text-white rounded-xl bg-white/10 border border-white/15">
+              <button onClick={() => setActiveModal(null)} className="p-2 text-slate-300 hover:text-white rounded-xl bg-white/10 border border-white/15 transition-all hover:bg-white/20">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="flex-1 p-8 overflow-y-auto space-y-8 bg-slate-950/90">
               
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">Server status is optimal, all nodes running</h3>
-                  <p className="text-xs text-slate-400 mt-1">Real-time metrics for CPU, RAM, NVMe SSD Storage and Network throughput.</p>
+                  <h3 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">Status do servidor otimizado, todos os nós rodando</h3>
+                  <p className="text-xs text-slate-400 mt-1">Métricas em tempo real para CPU, Memória RAM, Armazenamento SSD NVMe e Rede.</p>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs shadow-inner">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs shadow-inner self-start md:self-auto">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                  Live Telemetry Active
+                  Telemetria Ativa
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 
-                <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col items-center justify-between text-center relative shadow-2xl group hover:border-purple-500/50 transition-all">
-                  <div className="absolute top-4 left-4 text-[10px] font-mono text-slate-400 uppercase tracking-widest">RAM Usage</div>
+                <div className="bg-slate-900/70 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col items-center justify-between text-center relative shadow-2xl group hover:border-purple-500/50 transition-all">
+                  <div className="absolute top-4 left-4 text-[10px] font-mono text-purple-300 uppercase tracking-widest">Uso de Memória RAM</div>
                   
                   <div className="relative w-40 h-40 my-6 flex items-center justify-center">
                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -723,13 +733,13 @@ export default function App() {
                   </div>
 
                   <div className="w-full text-center">
-                    <div className="text-sm font-bold text-white">Memory Allocation</div>
-                    <div className="text-xs text-emerald-400 font-mono mt-1">+2.4 GB free buffer</div>
+                    <div className="text-sm font-bold text-white">Alocação de Memória</div>
+                    <div className="text-xs text-emerald-400 font-mono mt-1">+2.4 GB buffer livre</div>
                   </div>
                 </div>
 
-                <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col items-center justify-between text-center relative shadow-2xl group hover:border-purple-500/50 transition-all">
-                  <div className="absolute top-4 left-4 text-[10px] font-mono text-slate-400 uppercase tracking-widest">SSD Storage</div>
+                <div className="bg-slate-900/70 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col items-center justify-between text-center relative shadow-2xl group hover:border-purple-500/50 transition-all">
+                  <div className="absolute top-4 left-4 text-[10px] font-mono text-sky-300 uppercase tracking-widest">Armazenamento SSD</div>
                   
                   <div className="relative w-40 h-40 my-6 flex items-center justify-center">
                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -750,13 +760,13 @@ export default function App() {
                   </div>
 
                   <div className="w-full text-center">
-                    <div className="text-sm font-bold text-white">NVMe RAID 1 Pool</div>
-                    <div className="text-xs text-sky-400 font-mono mt-1">106.2 GiB free space</div>
+                    <div className="text-sm font-bold text-white">Pool NVMe RAID 1</div>
+                    <div className="text-xs text-sky-400 font-mono mt-1">106.2 GiB livres</div>
                   </div>
                 </div>
 
-                <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col items-center justify-between text-center relative shadow-2xl group hover:border-purple-500/50 transition-all">
-                  <div className="absolute top-4 left-4 text-[10px] font-mono text-slate-400 uppercase tracking-widest">CPU Cores</div>
+                <div className="bg-slate-900/70 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col items-center justify-between text-center relative shadow-2xl group hover:border-purple-500/50 transition-all">
+                  <div className="absolute top-4 left-4 text-[10px] font-mono text-emerald-300 uppercase tracking-widest">Núcleos de CPU</div>
                   
                   <div className="relative w-40 h-40 my-6 flex items-center justify-center">
                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -777,13 +787,13 @@ export default function App() {
                   </div>
 
                   <div className="w-full text-center">
-                    <div className="text-sm font-bold text-white">Processor Load</div>
-                    <div className="text-xs text-emerald-400 font-mono mt-1">8 Cores @ 3.4GHz</div>
+                    <div className="text-sm font-bold text-white">Carga do Processador</div>
+                    <div className="text-xs text-emerald-400 font-mono mt-1">8 Núcleos @ 3.4GHz</div>
                   </div>
                 </div>
 
-                <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col items-center justify-between text-center relative shadow-2xl group hover:border-purple-500/50 transition-all">
-                  <div className="absolute top-4 left-4 text-[10px] font-mono text-slate-400 uppercase tracking-widest">Network IO</div>
+                <div className="bg-slate-900/70 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col items-center justify-between text-center relative shadow-2xl group hover:border-purple-500/50 transition-all">
+                  <div className="absolute top-4 left-4 text-[10px] font-mono text-rose-300 uppercase tracking-widest">E/S de Rede</div>
                   
                   <div className="relative w-40 h-40 my-6 flex items-center justify-center">
                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -799,12 +809,12 @@ export default function App() {
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <span className="text-3xl font-extrabold text-white font-mono tracking-tighter">82%</span>
-                      <span className="text-[10px] text-slate-400 font-mono mt-0.5">1 Gbps Fiber</span>
+                      <span className="text-[10px] text-slate-400 font-mono mt-0.5">Fibra 1 Gbps</span>
                     </div>
                   </div>
 
                   <div className="w-full text-center">
-                    <div className="text-sm font-bold text-white">Bandwidth Speed</div>
+                    <div className="text-sm font-bold text-white">Velocidade de Banda</div>
                     <div className="text-xs text-purple-300 font-mono mt-1">940 Mbps down / 850 up</div>
                   </div>
                 </div>
@@ -814,10 +824,10 @@ export default function App() {
             </div>
 
             <div className="h-16 px-8 bg-slate-900/90 border-t border-white/15 flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-mono">Ubuntu 24.04.1 LTS Kernel 6.8.0-31-generic</span>
+              <span className="text-xs text-slate-400 font-mono">Ubuntu 24.04.1 LTS Kernel 6.8.0-31-generic • InoveCloud OS</span>
               <button 
                 onClick={() => setActiveModal(null)}
-                className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 text-white rounded-xl text-xs font-semibold shadow-xl border border-white/20"
+                className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 text-white rounded-xl text-xs font-semibold shadow-xl border border-white/20 transition-all hover:scale-105"
               >
                 Fechar Monitor
               </button>
@@ -1063,6 +1073,58 @@ export default function App() {
                   <div className="flex justify-between font-mono text-slate-200">
                     <span>Servidor DNS:</span>
                     <span className="text-slate-300">{dnsServer}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Virtual Optical Drive Mounting Card */}
+              <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/20 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                    <Disc className="w-4 h-4 text-amber-400" /> Unidade Óptica Virtual (CD/DVD ISO)
+                  </h4>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={cdromMounted} 
+                      onChange={e => setCdromMounted(e.target.checked)} 
+                      className="sr-only peer" 
+                    />
+                    <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                  </label>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-slate-300 mb-1">Caminho da Imagem ISO</label>
+                    <input 
+                      type="text" 
+                      value={isoImagePath}
+                      onChange={e => setIsoImagePath(e.target.value)}
+                      placeholder="/home/satoshi/Downloads/inovecloud-alpine-os.iso" 
+                      className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none focus:border-amber-500 shadow-inner"
+                    />
+                  </div>
+
+                  <div className="bg-slate-900/90 p-4 rounded-xl border border-white/20 space-y-2 font-mono text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Ponto de Montagem:</span>
+                      <span className="text-amber-300">/mnt/cdrom</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Status do Drive:</span>
+                      <span className={cdromMounted ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>
+                        {cdromMounted ? "Montado (RO) - Alpine Linux InoveCloud" : "Desmontado"}
+                      </span>
+                    </div>
+                    {cdromMounted && (
+                      <div className="pt-2 border-t border-white/10 text-[11px] text-slate-300 space-y-1">
+                        <div className="text-purple-300 font-semibold">Conteúdo da Mídia Detectado:</div>
+                        <div>📁 /mnt/cdrom/answers (Autoinstall)</div>
+                        <div>📁 /mnt/cdrom/firstboot.sh (Init Script)</div>
+                        <div>📁 /mnt/cdrom/workspace.tar.gz (InoveCloud OS Core)</div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
