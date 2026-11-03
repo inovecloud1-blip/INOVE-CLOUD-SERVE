@@ -15,7 +15,7 @@ jobs:
       - name: Install ISO Building Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xorriso squashfs-tools wget curl genisoimage syslinux isolinux p7zip-full
+          sudo apt-get install -y xorriso squashfs-tools wget curl genisoimage syslinux syslinux-utils isolinux p7zip-full
 
       - name: Download Alpine Linux Virt Base ISO
         run: |
@@ -47,6 +47,10 @@ jobs:
             -c boot.cat \
             -no-emul-boot -boot-load-size 4 -boot-info-table \
             -o ../inovecloud-alpine-os.iso .
+
+          cd ..
+          # Make ISO hybrid (bootable as CD and USB/VirtualBox virtual drive)
+          isohybrid inovecloud-alpine-os.iso || true
 
       - name: Upload ISO Artifact
         uses: actions/upload-artifact@v4
