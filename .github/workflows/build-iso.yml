@@ -1,0 +1,50 @@
+name: Build InoveCloud OS ISO
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-iso:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xorriso wget squashfs-tools p7zip-full genisoimage syslinux
+
+      - name: Download Ubuntu 24.04 LTS Base ISO
+        run: |
+          wget -O ubuntu-base.iso https://releases.ubuntu.com/24.04/ubuntu-24.04.1-live-server-amd64.iso
+
+      - name: Extract and Customize ISO with Autoinstall
+        run: |
+          mkdir -p iso_extract custom_iso
+          7z x ubuntu-base.iso -oiso_extract/
+          
+          # Copy user-data and meta-data for autoinstall
+          mkdir -p iso_extract/nocloud
+          cp ubuntu-iso/user-data iso_extract/nocloud/user-data
+          touch iso_extract/nocloud/meta-data
+          
+          # Rebuild ISO with xorriso
+          cd iso_extract
+          xorriso -as mkisofs -r -V "INOVECLOUD_OS" \
+            -J -joliet-long -l \
+            -b boot/grub/i386-pc/eltorito.img \
+            -c boot.catalog \
+            -no-emul-boot -boot-load-size 4 -boot-info-table \
+            --eltorito-alt-boot \
+            -e EFI/boot/bootx64.efi \
+            -no-emul-boot \
+            -o ../inovecloud-os-24.04.iso .
+
+      - name: Upload ISO Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: InoveCloud-OS-Ubuntu-24.04-x86_64
+          path: inovecloud-os-24.04.iso
