@@ -38,18 +38,39 @@ jobs:
           cp alpine-iso/firstboot.sh iso_extract/firstboot.sh
           cp /tmp/bundle/workspace.tar.gz iso_extract/workspace.tar.gz
 
-          # Rebuild ISO with robust Alpine ISOLINUX boot configuration
+          # Find MBR bin for hybrid boot
+          MBR_BIN=""
+          for p in /usr/lib/ISOLINUX/isohdpfx.bin /usr/share/syslinux/isohdpfx.bin; do
+            if [ -f "$p" ]; then
+              MBR_BIN="$p"
+              break
+            fi
+          done
+
+          # Rebuild ISO with hybrid boot configuration
           cd iso_extract
-          xorriso -as mkisofs \
-            -r -V "INOVECLOUD_ALPINE" \
-            -J -joliet-long -l \
-            -b boot/syslinux/isolinux.bin \
-            -c boot.cat \
-            -no-emul-boot -boot-load-size 4 -boot-info-table \
-            -o ../inovecloud-alpine-os.iso .
+          if [ -n "$MBR_BIN" ]; then
+            echo "Using MBR binary: $MBR_BIN"
+            xorriso -as mkisofs \
+              -r -V "INOVECLOUD_ALPINE" \
+              -J -joliet-long -l \
+              -b boot/syslinux/isolinux.bin \
+              -c boot.cat \
+              -no-emul-boot -boot-load-size 4 -boot-info-table \
+              -isohybrid-mbr "$MBR_BIN" \
+              -o ../inovecloud-alpine-os.iso .
+          else
+            echo "Building standard ISOLINUX ISO..."
+            xorriso -as mkisofs \
+              -r -V "INOVECLOUD_ALPINE" \
+              -J -joliet-long -l \
+              -b boot/syslinux/isolinux.bin \
+              -c boot.cat \
+              -no-emul-boot -boot-load-size 4 -boot-info-table \
+              -o ../inovecloud-alpine-os.iso .
+          fi
 
           cd ..
-          # Make ISO hybrid (bootable as CD and USB/VirtualBox virtual drive)
           isohybrid inovecloud-alpine-os.iso || true
 
       - name: Upload ISO Artifact

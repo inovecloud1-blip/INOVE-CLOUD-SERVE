@@ -88,10 +88,23 @@ export default function App() {
   const [webShortcuts, setWebShortcuts] = useState(INITIAL_WEB_SHORTCUTS);
   const [storeTab, setStoreTab] = useState<'server' | 'shortcuts'>('server');
   const [activeWindow, setActiveWindow] = useState<{ title: string; url: string; isVnc?: boolean } | null>(null);
-  const [activeModal, setActiveModal] = useState<'settings' | 'store' | 'monitor' | 'terminal' | 'files' | 'editUser' | 'editWidget' | 'linuxConfig' | null>(null);
+  const [activeModal, setActiveModal] = useState<'settings' | 'store' | 'monitor' | 'terminal' | 'files' | 'editUser' | 'editWidget' | 'linuxConfig' | 'systemLogs' | null>(null);
   const [selectedAppPreview, setSelectedAppPreview] = useState<any | null>(null);
   const [wallpaper, setWallpaper] = useState(WALLPAPERS[0].url);
   const [newShortcutForm, setNewShortcutForm] = useState({ name: '', url: '', category: 'Tools', description: '' });
+
+  // System Logs State
+  const [logFilter, setLogFilter] = useState<'all' | 'ERROR' | 'WARN'>('all');
+  const [systemLogsList, setSystemLogsList] = useState([
+    { id: 1, timestamp: '2026-11-03 05:38:12', level: 'ERROR', service: 'docker', message: 'Container inove-emby exited unexpectedly with code 137 (OOM Killed).' },
+    { id: 2, timestamp: '2026-11-03 05:37:45', level: 'WARN', service: 'caddy', message: 'SSL certificate renewal pending for inovecloudos.local domain.' },
+    { id: 3, timestamp: '2026-11-03 05:36:20', level: 'ERROR', service: 'ufw', message: 'Blocked unauthorized inbound packet on port 22 from 185.220.101.5.' },
+    { id: 4, timestamp: '2026-11-03 05:35:10', level: 'WARN', service: 'kernel', message: 'NVMe SSD temperature reached 68°C (Threshold: 70°C).' },
+    { id: 5, timestamp: '2026-11-03 05:32:00', level: 'ERROR', service: 'nextcloud', message: 'Database connection timeout on /var/lib/mysql/socket.' },
+    { id: 6, timestamp: '2026-11-03 05:30:15', level: 'WARN', service: 'adguard', message: 'High DNS query load detected: 4,500 qps.' },
+    { id: 7, timestamp: '2026-11-03 05:28:40', level: 'ERROR', service: 'ssh', message: 'Failed password for invalid user root from 192.168.1.188 port 54322.' },
+    { id: 8, timestamp: '2026-11-03 05:25:00', level: 'WARN', service: 'systemd', message: 'Unit docker.service memory limit approaching 85%.' },
+  ]);
   
   // User Profile & Language States
   const [userName, setUserName] = useState('Administrador');
@@ -321,6 +334,13 @@ export default function App() {
             title="Terminal SSH"
           >
             <TerminalIcon className="w-3.5 h-3.5 text-amber-400" /> Terminal
+          </button>
+          <button 
+            onClick={() => setActiveModal('systemLogs')}
+            className="px-3.5 py-1.5 bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/40 rounded-full text-xs font-semibold text-rose-200 flex items-center gap-1.5 transition-all shadow-xl backdrop-blur-xl"
+            title="System Logs (Errors & Warnings)"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> {language === 'en' ? 'Logs' : 'System Logs'}
           </button>
           <button 
             onClick={() => setActiveModal('store')}
@@ -1138,6 +1158,93 @@ export default function App() {
                 autoFocus 
               />
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* SYSTEM LOGS MODAL */}
+      {activeModal === 'systemLogs' && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-2xl flex items-center justify-center p-4 md:p-8 animate-fadeIn">
+          <div className="bg-slate-950/95 backdrop-blur-3xl border border-white/30 rounded-3xl w-full max-w-5xl h-[80vh] flex flex-col shadow-2xl overflow-hidden font-mono text-xs">
+            
+            <div className="h-14 px-6 bg-slate-900/90 flex items-center justify-between border-b border-white/15">
+              <div className="flex items-center gap-3">
+                <div className="w-3.5 h-3.5 rounded-full bg-rose-500 cursor-pointer shadow-md" onClick={() => setActiveModal(null)}></div>
+                <div className="w-3.5 h-3.5 rounded-full bg-amber-500 shadow-md"></div>
+                <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-md"></div>
+                <span className="text-slate-100 font-bold ml-2 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-400" /> System Logs (Tail View - Errors & Warnings)
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex bg-slate-950 p-1 rounded-xl border border-white/20">
+                  <button 
+                    onClick={() => setLogFilter('all')}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${logFilter === 'all' ? 'bg-white/20 text-white shadow-inner' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    All ({systemLogsList.length})
+                  </button>
+                  <button 
+                    onClick={() => setLogFilter('ERROR')}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${logFilter === 'ERROR' ? 'bg-rose-600/40 text-rose-200 border border-rose-500/50' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Errors ({systemLogsList.filter(l => l.level === 'ERROR').length})
+                  </button>
+                  <button 
+                    onClick={() => setLogFilter('WARN')}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${logFilter === 'WARN' ? 'bg-amber-600/40 text-amber-200 border border-amber-500/50' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Warnings ({systemLogsList.filter(l => l.level === 'WARN').length})
+                  </button>
+                </div>
+                <button onClick={() => setActiveModal(null)} className="p-1.5 text-slate-300 hover:text-white rounded-xl bg-white/10 border border-white/15">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 p-6 overflow-y-auto space-y-3 bg-slate-950/95 selection:bg-purple-600 selection:text-white">
+              {systemLogsList
+                .filter(log => logFilter === 'all' || log.level === logFilter)
+                .map(log => (
+                  <div key={log.id} className="p-3.5 bg-slate-900/60 rounded-xl border border-white/10 flex items-start gap-3 hover:bg-slate-900/90 transition-all shadow-inner">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono tracking-wider ${log.level === 'ERROR' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}>
+                      {log.level}
+                    </span>
+                    <span className="text-slate-400 text-[11px] font-mono">{log.timestamp}</span>
+                    <span className="px-2 py-0.5 bg-white/10 rounded text-[11px] font-mono text-purple-300">[{log.service}]</span>
+                    <span className="flex-1 text-slate-200 font-mono text-xs">{log.message}</span>
+                  </div>
+                ))}
+            </div>
+
+            <div className="h-14 px-6 bg-slate-900/90 border-t border-white/15 flex items-center justify-between text-xs text-slate-400 font-mono">
+              <span>Tail-f mode active • auto-refreshing system events</span>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => {
+                    const newLog = {
+                      id: Date.now(),
+                      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                      level: Math.random() > 0.5 ? 'ERROR' : 'WARN',
+                      service: ['docker', 'kernel', 'caddy', 'ufw', 'ssh'][Math.floor(Math.random() * 5)],
+                      message: 'Simulated real-time server event notification test.'
+                    };
+                    setSystemLogsList(prev => [newLog, ...prev]);
+                  }}
+                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold border border-white/20 transition-all"
+                >
+                  Simulate Event
+                </button>
+                <button 
+                  onClick={() => setSystemLogsList([])}
+                  className="px-3 py-1.5 bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 rounded-xl text-xs font-semibold border border-rose-500/30 transition-all"
+                >
+                  Clear Logs
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
