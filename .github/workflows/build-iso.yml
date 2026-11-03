@@ -38,7 +38,7 @@ jobs:
           cp alpine-iso/firstboot.sh iso_extract/firstboot.sh
           cp /tmp/bundle/workspace.tar.gz iso_extract/workspace.tar.gz
 
-          # Rebuild ISO with hybrid boot options for VirtualBox and KVM compatibility
+          # Rebuild ISO with robust Alpine ISOLINUX boot configuration
           cd iso_extract
           xorriso -as mkisofs \
             -r -V "INOVECLOUD_ALPINE" \
@@ -46,9 +46,6 @@ jobs:
             -b boot/syslinux/isolinux.bin \
             -c boot.cat \
             -no-emul-boot -boot-load-size 4 -boot-info-table \
-            -eltorito-alt-boot \
-            -e boot/syslinux/efi.img \
-            -no-emul-boot -isohybrid-gpt-basdat \
             -o ../inovecloud-alpine-os.iso .
 
       - name: Upload ISO Artifact
