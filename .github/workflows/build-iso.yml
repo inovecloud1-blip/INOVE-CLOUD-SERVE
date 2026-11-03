@@ -19,7 +19,9 @@ jobs:
 
       - name: Download Ubuntu 24.04 LTS Base ISO
         run: |
-          wget -O ubuntu-base.iso https://releases.ubuntu.com/24.04/ubuntu-24.04.1-live-server-amd64.iso
+          # Use official stable Ubuntu 24.04 LTS live server ISO release URL
+          wget -O ubuntu-base.iso https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso || \
+          wget -O ubuntu-base.iso https://old-releases.ubuntu.com/releases/24.04/ubuntu-24.04-live-server-amd64.iso
 
       - name: Extract and Customize ISO with Autoinstall
         run: |
