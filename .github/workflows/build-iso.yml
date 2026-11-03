@@ -27,16 +27,16 @@ jobs:
 
       - name: Extract, Customize and Inject InoveCloud OS
         run: |
-          mkdir -p iso_extract workspace_bundle
+          mkdir -p iso_extract /tmp/bundle
           7z x alpine-base.iso -oiso_extract/
 
-          # Bundle project files into workspace for offline/autoinstall deployment
-          tar --exclude='iso_extract' --exclude='.git' -czf workspace_bundle/workspace.tar.gz .
+          # Bundle project files outside current tree to avoid tar file-changed warning errors
+          tar --exclude='iso_extract' --exclude='.git' --exclude='alpine-base.iso' -czf /tmp/bundle/workspace.tar.gz .
 
           # Copy answer file and firstboot script
           cp alpine-iso/answers iso_extract/answers
           cp alpine-iso/firstboot.sh iso_extract/firstboot.sh
-          cp workspace_bundle/workspace.tar.gz iso_extract/workspace.tar.gz
+          cp /tmp/bundle/workspace.tar.gz iso_extract/workspace.tar.gz
 
           # Rebuild ISO with hybrid boot options for VirtualBox and KVM compatibility
           cd iso_extract
