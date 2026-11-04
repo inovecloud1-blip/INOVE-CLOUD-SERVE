@@ -7,16 +7,21 @@ set -e
 
 echo "🚀 Iniciando a instalação do InoveCloud OS no Alpine Linux..."
 
-# 1. Instalar dependências básicas
-echo "📦 Instalando Docker, Docker Compose, Avahi (mDNS) e Git..."
+# 1. Instalar dependências básicas incluindo openssh
+echo "📦 Instalando Docker, Docker Compose, Avahi, OpenSSH e Git..."
 apk update
-apk add --no-cache docker docker-compose openrc avahi avahi-tools git curl bash nodejs npm
+apk add --no-cache docker docker-compose openrc avahi avahi-tools openssh git curl bash nodejs npm
+
+# Configurar SSH para permitir root login
+sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config 2>/dev/null || echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 
 # 2. Ativar serviços no boot
 rc-update add docker boot
+rc-update add sshd default
 rc-update add avahi-daemon default
 
 service docker start
+service sshd start
 service avahi-daemon start
 
 # 3. Criar diretório de instalação
