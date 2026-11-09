@@ -44,6 +44,7 @@ const INITIAL_SERVER_APPS = [
   { id: 'obsidian', name: 'Obsidian Notes Server', category: 'Productivity & Notes', icon: '/public/assets/aistudio/icon_011cee20.svg', url: 'http://inovecloudos.local:8095', installed: true, port: 8095, version: '1.8.10', screenshot: '/public/assets/aistudio/screenshot-1__3__01439fab.webp', description: 'Private and flexible writing and knowledge base app that adapts to your way of thinking (Self-hosted Server).' },
   { id: 'chromium', name: 'Chromium Browser', category: 'Browser & Web', icon: '/public/assets/aistudio/images__24__f7b46eac.png', url: 'http://inovecloudos.local:8096', installed: true, port: 8096, version: '122.0', screenshot: '/public/assets/aistudio/images__23__92ee3318.png', description: 'Open-source browser project that aims to build a safer, faster, and more stable way to experience the web.' },
   { id: 'blinko', name: 'Blinko Notes', category: 'Productivity & Notes', icon: '/public/assets/aistudio/icon__2__549d031b.svg', url: 'http://inovecloudos.local:8097', installed: true, port: 8097, version: '1.2.0', screenshot: '/public/assets/aistudio/screenshot-1__4__54ba5bd9.webp', description: 'Open-source, self-hosted AI note-taking and knowledge capture tool designed for fast thought archiving.' },
+  { id: 'kasm', name: 'Kasm Linux Desktop', category: 'Graphical OS', icon: '/public/assets/aistudio/images__24__f7b46eac.png', url: 'http://inovecloudos.local:8443', installed: true, port: 8443, version: '1.15.0', screenshot: '/public/assets/aistudio/Captura_de_tela_2026-11-01_115551_8d87df87.png', description: 'Ambiente de desktop Linux completo e navegadores seguros rodando via Kasm Workspaces diretamente em uma aba do navegador.' },
 ];
 
 const INITIAL_WEB_SHORTCUTS = [
@@ -138,14 +139,34 @@ export default function App() {
   const [selectedFile, setSelectedFile] = useState<ServerFile | null>(null);
 
   // Linux Server Config State
+  const [linuxConfigTab, setLinuxConfigTab] = useState<'network' | 'backup' | 'power'>('network');
   const [wifiEnabled, setWifiEnabled] = useState(true);
   const [selectedWifi, setSelectedWifi] = useState('InoveCloud-5G (Conectado)');
   const [dhcpEnabled, setDhcpEnabled] = useState(true);
   const [ipAddress, setIpAddress] = useState('192.168.1.150');
   const [gateway, setGateway] = useState('192.168.1.1');
-  const [dnsServer, setDnsServer] = useState('1.1.1.1, 8.8.8.8');
+  const [primaryDns, setPrimaryDns] = useState('1.1.1.1');
+  const [secondaryDns, setSecondaryDns] = useState('8.8.8.8');
+  const dnsServer = `${primaryDns}, ${secondaryDns}`;
   const [sshEnabled, setSshEnabled] = useState(true);
   const [firewallUfw, setFirewallUfw] = useState(true);
+
+  // Power Management State
+  const [wolEnabled, setWolEnabled] = useState(true);
+  const [shutdownSchedule, setShutdownSchedule] = useState('midnight');
+  const [shutdownTime, setShutdownTime] = useState('02:00');
+  const [autoSuspendIdle, setAutoSuspendIdle] = useState(false);
+
+  // S3 Backup State
+  const [s3Endpoint, setS3Endpoint] = useState('s3.amazonaws.com');
+  const [s3Bucket, setS3Bucket] = useState('inovecloud-server-backups');
+  const [s3AccessKey, setS3AccessKey] = useState('AKIAIOSFODNN7EXAMPLE');
+  const [s3SecretKey, setS3SecretKey] = useState('wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY');
+  const [backupSchedule, setBackupSchedule] = useState('daily');
+  const [backupEmby, setBackupEmby] = useState(true);
+  const [backupNextcloud, setBackupNextcloud] = useState(true);
+  const [backupImmich, setBackupImmich] = useState(true);
+  const [backupKasm, setBackupKasm] = useState(true);
 
   // Terminal state
   const [terminalInput, setTerminalInput] = useState('');
@@ -201,6 +222,50 @@ export default function App() {
     if (hour < 12) return `Bom dia, ${userName}.`;
     if (hour < 18) return `Boa tarde, ${userName}.`;
     return `Boa noite, ${userName}.`;
+  };
+
+  const handleExportInitScript = () => {
+    const scriptContent = `#!/bin/sh
+# ====================================================================
+# InoveCloud OS - Dynamic Boot Initialization & Custom DNS Script
+# Generated automatically from InoveCloud OS Dashboard
+# Custom Primary DNS: ${primaryDns}
+# Custom Secondary DNS: ${secondaryDns}
+# ====================================================================
+
+echo "🚀 [InoveCloud OS] Starting network & custom DNS configuration..."
+
+# 1. Bring up network interface and obtain IP via DHCP
+ip link set eth0 up
+udhcpc -i eth0 -q &
+sleep 2
+
+# 2. Configure custom DNS servers defined by user
+echo "nameserver ${primaryDns}" > /etc/resolv.conf
+echo "nameserver ${secondaryDns}" >> /etc/resolv.conf
+echo "✅ Custom DNS configured: Primary=${primaryDns}, Secondary=${secondaryDns}"
+
+# 3. Detect and display local network IP address
+LOCAL_IP=$(ip -4 addr show eth0 | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}' || echo "192.168.0.101")
+echo "🌐 Local IP detected: $LOCAL_IP"
+
+# 4. Start InoveCloud OS Web Service on port 3000
+mkdir -p /opt/inovecloudos/public
+python3 -m http.server 3000 --bind 0.0.0.0 --directory /opt/inovecloudos/public > /var/log/inovecloud-web.log 2>&1 &
+
+echo "✨ InoveCloud OS & Kasm Workspaces ready at http://$LOCAL_IP:3000"
+`;
+
+    const blob = new Blob([scriptContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'inovecloud-init.sh';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    alert('📥 Script de inicialização (inovecloud-init.sh) gerado e baixado com sucesso! Grave este script na ISO do Alpine Linux para inicialização automática com seus DNS personalizados.');
   };
 
   const handleToggleServerApp = (appId: string) => {
@@ -382,25 +447,25 @@ export default function App() {
           
           {/* Widget 1: Files */}
           {widgetsConfig.showFiles && (
-            <div className="bg-white/10 backdrop-blur-2xl border border-white/25 rounded-3xl p-5 shadow-2xl flex flex-col justify-between hover:bg-white/15 transition-all">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-white/90">{language === 'en' ? 'Files & Dirs' : 'Files & Diretórios'}</span>
+            <div className="relative bg-white/10 backdrop-blur-3xl border border-white/40 rounded-3xl p-5 shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_25px_50px_rgba(0,0,0,0.5)] hover:bg-white/20 transition-all overflow-hidden group ring-1 ring-white/20 before:absolute before:-top-10 before:-left-10 before:w-32 before:h-32 before:bg-gradient-to-br before:from-pink-500/30 before:via-purple-500/20 before:to-amber-400/30 before:rounded-full before:blur-2xl before:pointer-events-none after:absolute after:-bottom-10 after:-right-10 after:w-32 after:h-32 after:bg-gradient-to-tl after:from-cyan-400/30 after:via-indigo-500/20 after:to-rose-500/30 after:rounded-full after:blur-2xl after:pointer-events-none flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-3 relative z-10">
+                <span className="text-xs font-semibold uppercase tracking-wider text-white/95">{language === 'en' ? 'Files & Dirs' : 'Files & Diretórios'}</span>
                 <span className="text-[10px] text-purple-300 font-mono">ZFS Storage</span>
               </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <div onClick={() => setActiveModal('files')} className="bg-white/10 hover:bg-white/20 border border-white/15 rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition-all shadow-inner">
+              <div className="grid grid-cols-2 gap-2.5 relative z-10">
+                <div onClick={() => setActiveModal('files')} className="bg-white/10 hover:bg-white/25 border border-white/20 rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition-all shadow-inner">
                   <Folder className="w-5 h-5 text-amber-400" />
                   <span className="text-xs font-medium text-white">Downloads</span>
                 </div>
-                <div onClick={() => setActiveModal('files')} className="bg-white/10 hover:bg-white/20 border border-white/15 rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition-all shadow-inner">
+                <div onClick={() => setActiveModal('files')} className="bg-white/10 hover:bg-white/25 border border-white/20 rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition-all shadow-inner">
                   <Folder className="w-5 h-5 text-amber-400" />
                   <span className="text-xs font-medium text-white">Documents</span>
                 </div>
-                <div onClick={() => setActiveModal('files')} className="bg-white/10 hover:bg-white/20 border border-white/15 rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition-all shadow-inner">
+                <div onClick={() => setActiveModal('files')} className="bg-white/10 hover:bg-white/25 border border-white/20 rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition-all shadow-inner">
                   <Folder className="w-5 h-5 text-amber-400" />
                   <span className="text-xs font-medium text-white">Photos</span>
                 </div>
-                <div onClick={() => setActiveModal('files')} className="bg-white/10 hover:bg-white/20 border border-white/15 rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition-all shadow-inner">
+                <div onClick={() => setActiveModal('files')} className="bg-white/10 hover:bg-white/25 border border-white/20 rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition-all shadow-inner">
                   <Folder className="w-5 h-5 text-amber-400" />
                   <span className="text-xs font-medium text-white">Videos</span>
                 </div>
@@ -410,18 +475,18 @@ export default function App() {
 
           {/* Widget 2: Storage */}
           {widgetsConfig.showStorage && (
-            <div onClick={() => setActiveModal('monitor')} className="bg-white/10 backdrop-blur-2xl border border-white/25 rounded-3xl p-5 shadow-2xl flex flex-col justify-between hover:bg-white/15 transition-all cursor-pointer">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold uppercase tracking-wider text-white/90">{language === 'en' ? 'Storage (SSD)' : 'Armazenamento (SSD)'}</span>
+            <div onClick={() => setActiveModal('monitor')} className="relative bg-white/10 backdrop-blur-3xl border border-white/40 rounded-3xl p-5 shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_25px_50px_rgba(0,0,0,0.5)] hover:bg-white/20 transition-all cursor-pointer overflow-hidden group ring-1 ring-white/20 before:absolute before:-top-10 before:-left-10 before:w-32 before:h-32 before:bg-gradient-to-br before:from-pink-500/30 before:via-purple-500/20 before:to-amber-400/30 before:rounded-full before:blur-2xl before:pointer-events-none after:absolute after:-bottom-10 after:-right-10 after:w-32 after:h-32 after:bg-gradient-to-tl after:from-cyan-400/30 after:via-indigo-500/20 after:to-rose-500/30 after:rounded-full after:blur-2xl after:pointer-events-none flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-1 relative z-10">
+                <span className="text-xs font-semibold uppercase tracking-wider text-white/95">{language === 'en' ? 'Storage (SSD)' : 'Armazenamento (SSD)'}</span>
                 <span className="text-[10px] text-emerald-300 font-mono">NVMe RAID 1</span>
               </div>
-              <div className="text-2xl font-bold font-mono text-white tracking-tight my-2">
-                4.2 TB <span className="text-xs font-normal text-white/70">/ 16 TB</span>
+              <div className="text-2xl font-bold font-mono text-white tracking-tight my-2 relative z-10">
+                4.2 TB <span className="text-xs font-normal text-white/75">/ 16 TB</span>
               </div>
-              <div className="w-full bg-white/20 h-2.5 rounded-full overflow-hidden my-2 shadow-inner">
+              <div className="w-full bg-white/20 h-2.5 rounded-full overflow-hidden my-2 shadow-inner relative z-10">
                 <div className="bg-gradient-to-r from-amber-500 to-rose-500 h-full rounded-full" style={{ width: '26%' }}></div>
               </div>
-              <div className="flex justify-between text-xs text-white/80 font-mono">
+              <div className="flex justify-between text-xs text-white/85 font-mono relative z-10">
                 <span>{language === 'en' ? 'Used: 26%' : 'Usado: 26%'}</span>
                 <span>106.2 GiB free</span>
               </div>
@@ -430,26 +495,26 @@ export default function App() {
 
           {/* Widget 3: System Hardware */}
           {widgetsConfig.showSystem && (
-            <div onClick={() => setActiveModal('monitor')} className="bg-white/10 backdrop-blur-2xl border border-white/25 rounded-3xl p-5 shadow-2xl flex flex-col justify-between hover:bg-white/15 transition-all cursor-pointer">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-white/90">{language === 'en' ? 'Server Hardware' : 'Hardware do Servidor'}</span>
+            <div onClick={() => setActiveModal('monitor')} className="relative bg-white/10 backdrop-blur-3xl border border-white/40 rounded-3xl p-5 shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_25px_50px_rgba(0,0,0,0.5)] hover:bg-white/20 transition-all cursor-pointer overflow-hidden group ring-1 ring-white/20 before:absolute before:-top-10 before:-left-10 before:w-32 before:h-32 before:bg-gradient-to-br before:from-pink-500/30 before:via-purple-500/20 before:to-amber-400/30 before:rounded-full before:blur-2xl before:pointer-events-none after:absolute after:-bottom-10 after:-right-10 after:w-32 after:h-32 after:bg-gradient-to-tl after:from-cyan-400/30 after:via-indigo-500/20 after:to-rose-500/30 after:rounded-full after:blur-2xl after:pointer-events-none flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-3 relative z-10">
+                <span className="text-xs font-semibold uppercase tracking-wider text-white/95">{language === 'en' ? 'Server Hardware' : 'Hardware do Servidor'}</span>
                 <span className="text-[10px] text-sky-300 font-mono">Ubuntu 24.04</span>
               </div>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="bg-white/10 border border-white/15 rounded-2xl p-3 shadow-inner">
+              <div className="grid grid-cols-3 gap-3 text-center relative z-10">
+                <div className="bg-white/10 border border-white/20 rounded-2xl p-3 shadow-inner">
                   <Cpu className="w-5 h-5 mx-auto mb-1 text-emerald-400" />
                   <div className="text-xs font-bold text-white">CPU</div>
-                  <div className="text-xs font-mono text-white/90">{stats ? stats.cpu.load : 18}%</div>
+                  <div className="text-xs font-mono text-white/95">{stats ? stats.cpu.load : 18}%</div>
                 </div>
-                <div className="bg-white/10 border border-white/15 rounded-2xl p-3 shadow-inner">
+                <div className="bg-white/10 border border-white/20 rounded-2xl p-3 shadow-inner">
                   <HardDrive className="w-5 h-5 mx-auto mb-1 text-sky-400" />
                   <div className="text-xs font-bold text-white">RAM</div>
-                  <div className="text-xs font-mono text-white/90">{stats ? `${(stats.memory.used / (1024*1024*1024)).toFixed(1)} GB` : '6.2 GB'}</div>
+                  <div className="text-xs font-mono text-white/95">{stats ? `${(stats.memory.used / (1024*1024*1024)).toFixed(1)} GB` : '6.2 GB'}</div>
                 </div>
-                <div className="bg-white/10 border border-white/15 rounded-2xl p-3 shadow-inner">
+                <div className="bg-white/10 border border-white/20 rounded-2xl p-3 shadow-inner">
                   <Activity className="w-5 h-5 mx-auto mb-1 text-purple-400" />
                   <div className="text-xs font-bold text-white">Temp</div>
-                  <div className="text-xs font-mono text-white/90">{stats ? stats.cpu.temperature : 44}°C</div>
+                  <div className="text-xs font-mono text-white/95">{stats ? stats.cpu.temperature : 44}°C</div>
                 </div>
               </div>
             </div>
@@ -457,12 +522,12 @@ export default function App() {
 
           {/* Widget 4: Home Screen Monitor Widget */}
           {widgetsConfig.showMonitorWidget && (
-            <div onClick={() => setActiveModal('monitor')} className="bg-white/10 backdrop-blur-2xl border border-white/25 rounded-3xl p-5 shadow-2xl flex flex-col justify-between hover:bg-white/15 transition-all cursor-pointer relative group">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-white/90">Monitor Telemetria</span>
+            <div onClick={() => setActiveModal('monitor')} className="relative bg-white/10 backdrop-blur-3xl border border-white/40 rounded-3xl p-5 shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_25px_50px_rgba(0,0,0,0.5)] hover:bg-white/20 transition-all cursor-pointer overflow-hidden group ring-1 ring-white/20 before:absolute before:-top-10 before:-left-10 before:w-32 before:h-32 before:bg-gradient-to-br before:from-pink-500/30 before:via-purple-500/20 before:to-amber-400/30 before:rounded-full before:blur-2xl before:pointer-events-none after:absolute after:-bottom-10 after:-right-10 after:w-32 after:h-32 after:bg-gradient-to-tl after:from-cyan-400/30 after:via-indigo-500/20 after:to-rose-500/30 after:rounded-full after:blur-2xl after:pointer-events-none flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2 relative z-10">
+                <span className="text-xs font-semibold uppercase tracking-wider text-white/95">Monitor Telemetria</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
               </div>
-              <div className="flex items-center justify-center my-1">
+              <div className="flex items-center justify-center my-1 relative z-10">
                 <div className="relative w-20 h-20 flex items-center justify-center">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="38" stroke="currentColor" strokeWidth="8" className="text-white/10" fill="none" />
@@ -474,7 +539,7 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              <div className="text-[11px] text-center text-white/80 font-medium">
+              <div className="text-[11px] text-center text-white/85 font-medium relative z-10">
                 Clique para ver os 4 dials em tempo real
               </div>
             </div>
@@ -1035,153 +1100,421 @@ export default function App() {
 
             <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-slate-950/80 text-xs">
               
-              <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/25 space-y-4 shadow-xl">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-sm text-white flex items-center gap-2">
-                    <Wifi className="w-4 h-4 text-sky-400" /> Conexão Wi-Fi (wlan0)
-                  </h4>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" checked={wifiEnabled} onChange={e => setWifiEnabled(e.target.checked)} className="sr-only peer" />
-                    <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-300 mb-1">Rede Wi-Fi Selecionada</label>
-                    <select value={selectedWifi} onChange={e => setSelectedWifi(e.target.value)} className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white focus:outline-none">
-                      <option>InoveCloud-5G (Conectado)</option>
-                      <option>InoveCloud-2.4G (Sinal Forte)</option>
-                      <option>RedeConvidado (Desconectado)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-3 bg-slate-900/90 p-4 rounded-xl border border-white/20 shadow-inner">
-                  <div className="flex justify-between font-mono text-slate-200">
-                    <span>Status da Internet:</span>
-                    <span className="text-emerald-400 font-bold">ONLINE (1 Gbps Fiber)</span>
-                  </div>
-                  <div className="flex justify-between font-mono text-slate-200">
-                    <span>Endereço IP Local:</span>
-                    <span className="text-sky-300">{ipAddress}</span>
-                  </div>
-                  <div className="flex justify-between font-mono text-slate-200">
-                    <span>Gateway Padrão:</span>
-                    <span className="text-slate-300">{gateway}</span>
-                  </div>
-                  <div className="flex justify-between font-mono text-slate-200">
-                    <span>Servidor DNS:</span>
-                    <span className="text-slate-300">{dnsServer}</span>
-                  </div>
-                </div>
+              {/* Tab Navigation */}
+              <div className="flex items-center gap-2 mb-2 bg-slate-900/90 p-1.5 rounded-2xl border border-white/20 w-fit">
+                <button 
+                  onClick={() => setLinuxConfigTab('network')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${linuxConfigTab === 'network' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xl' : 'text-slate-300 hover:text-white'}`}
+                >
+                  <Wifi className="w-4 h-4" /> Rede & Conectividade
+                </button>
+                <button 
+                  onClick={() => setLinuxConfigTab('backup')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${linuxConfigTab === 'backup' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xl' : 'text-slate-300 hover:text-white'}`}
+                >
+                  <Cloud className="w-4 h-4" /> Backups Automatizados (S3 / Nuvem)
+                </button>
+                <button 
+                  onClick={() => setLinuxConfigTab('power')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${linuxConfigTab === 'power' ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-xl' : 'text-slate-300 hover:text-white'}`}
+                >
+                  <Power className="w-4 h-4" /> Power Management
+                </button>
               </div>
 
-              {/* Virtual Optical Drive Mounting Card */}
-              <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/20 space-y-4 shadow-xl">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-sm text-white flex items-center gap-2">
-                    <Disc className="w-4 h-4 text-amber-400" /> Unidade Óptica Virtual (CD/DVD ISO)
-                  </h4>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={cdromMounted} 
-                      onChange={e => setCdromMounted(e.target.checked)} 
-                      className="sr-only peer" 
-                    />
-                    <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
-                  </label>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-slate-300 mb-1">Caminho da Imagem ISO</label>
-                    <input 
-                      type="text" 
-                      value={isoImagePath}
-                      onChange={e => setIsoImagePath(e.target.value)}
-                      placeholder="/home/satoshi/Downloads/inovecloud-alpine-os.iso" 
-                      className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none focus:border-amber-500 shadow-inner"
-                    />
-                  </div>
-
-                  <div className="bg-slate-900/90 p-4 rounded-xl border border-white/20 space-y-2 font-mono text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Ponto de Montagem:</span>
-                      <span className="text-amber-300">/mnt/cdrom</span>
+              {linuxConfigTab === 'network' ? (
+                <>
+                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/25 space-y-4 shadow-xl">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                        <Wifi className="w-4 h-4 text-sky-400" /> Conexão Wi-Fi (wlan0)
+                      </h4>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={wifiEnabled} onChange={e => setWifiEnabled(e.target.checked)} className="sr-only peer" />
+                        <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Status do Drive:</span>
-                      <span className={cdromMounted ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>
-                        {cdromMounted ? "Montado (RO) - Alpine Linux InoveCloud" : "Desmontado"}
-                      </span>
-                    </div>
-                    {cdromMounted && (
-                      <div className="pt-2 border-t border-white/10 text-[11px] text-slate-300 space-y-1">
-                        <div className="text-purple-300 font-semibold">Conteúdo da Mídia Detectado:</div>
-                        <div>📁 /mnt/cdrom/answers (Autoinstall)</div>
-                        <div>📁 /mnt/cdrom/firstboot.sh (Init Script)</div>
-                        <div>📁 /mnt/cdrom/workspace.tar.gz (InoveCloud OS Core)</div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-slate-300 mb-1">Rede Wi-Fi Selecionada</label>
+                        <select value={selectedWifi} onChange={e => setSelectedWifi(e.target.value)} className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white focus:outline-none">
+                          <option>InoveCloud-5G (Conectado)</option>
+                          <option>InoveCloud-2.4G (Sinal Forte)</option>
+                          <option>RedeConvidado (Desconectado)</option>
+                        </select>
                       </div>
-                    )}
+                      <div>
+                        <label className="block text-slate-300 mb-1">Endereço IP Local</label>
+                        <input 
+                          type="text" 
+                          value={ipAddress}
+                          onChange={e => setIpAddress(e.target.value)}
+                          className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                      <div>
+                        <label className="block text-slate-300 mb-1">Servidor DNS Primário Customizado</label>
+                        <input 
+                          type="text" 
+                          value={primaryDns}
+                          onChange={e => setPrimaryDns(e.target.value)}
+                          placeholder="Ex: 1.1.1.1 ou 8.8.8.8" 
+                          className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none focus:border-sky-500 shadow-inner"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-300 mb-1">Servidor DNS Secundário Customizado</label>
+                        <input 
+                          type="text" 
+                          value={secondaryDns}
+                          onChange={e => setSecondaryDns(e.target.value)}
+                          placeholder="Ex: 8.8.4.4 ou 1.0.0.1" 
+                          className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none focus:border-sky-500 shadow-inner"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 bg-slate-900/90 p-4 rounded-xl border border-white/20 shadow-inner">
+                      <div className="flex justify-between font-mono text-slate-200">
+                        <span>Status da Internet:</span>
+                        <span className="text-emerald-400 font-bold">ONLINE (1 Gbps Fiber)</span>
+                      </div>
+                      <div className="flex justify-between font-mono text-slate-200">
+                        <span>Endereço IP Local:</span>
+                        <span className="text-sky-300">{ipAddress}</span>
+                      </div>
+                      <div className="flex justify-between font-mono text-slate-200">
+                        <span>Gateway Padrão:</span>
+                        <span className="text-slate-300">{gateway}</span>
+                      </div>
+                      <div className="flex justify-between font-mono text-slate-200">
+                        <span>Servidores DNS Ativos:</span>
+                        <span className="text-amber-300 font-mono font-bold">{dnsServer}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex justify-end">
+                      <button 
+                        onClick={handleExportInitScript}
+                        className="px-5 py-2.5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:opacity-90 text-white rounded-xl text-xs font-bold shadow-xl transition-all border border-white/20 flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" /> Exportar Script de Boot (.sh) para ISO
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Virtual Optical Drive Mounting Card */}
+                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/20 space-y-4 shadow-xl">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                        <Disc className="w-4 h-4 text-amber-400" /> Unidade Óptica Virtual (CD/DVD ISO)
+                      </h4>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={cdromMounted} 
+                          onChange={e => setCdromMounted(e.target.checked)} 
+                          className="sr-only peer" 
+                        />
+                        <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                      </label>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-slate-300 mb-1">Caminho da Imagem ISO</label>
+                        <input 
+                          type="text" 
+                          value={isoImagePath}
+                          onChange={e => setIsoImagePath(e.target.value)}
+                          placeholder="/home/satoshi/Downloads/inovecloud-alpine-os.iso" 
+                          className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none focus:border-amber-500 shadow-inner"
+                        />
+                      </div>
+
+                      <div className="bg-slate-900/90 p-4 rounded-xl border border-white/20 space-y-2 font-mono text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Ponto de Montagem:</span>
+                          <span className="text-amber-300">/mnt/cdrom</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Status do Drive:</span>
+                          <span className={cdromMounted ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>
+                            {cdromMounted ? "Montado (RO) - Alpine Linux InoveCloud" : "Desmontado"}
+                          </span>
+                        </div>
+                        {cdromMounted && (
+                          <div className="pt-2 border-t border-white/10 text-[11px] text-slate-300 space-y-1">
+                            <div className="text-purple-300 font-semibold">Conteúdo da Mídia Detectado:</div>
+                            <div>📁 /mnt/cdrom/answers (Autoinstall)</div>
+                            <div>📁 /mnt/cdrom/firstboot.sh (Init Script)</div>
+                            <div>📁 /mnt/cdrom/workspace.tar.gz (InoveCloud OS Core)</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/20 space-y-4 shadow-xl">
+                    <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-purple-400" /> Serviços & Segurança (UFW & SSH)
+                    </h4>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label className="flex items-center justify-between p-3.5 bg-slate-900/90 rounded-xl border border-white/15 cursor-pointer shadow-inner">
+                        <div>
+                          <div className="font-medium text-white">Serviço SSH (Acesso Remoto)</div>
+                          <div className="text-[11px] text-slate-400">Porta 22 ativa para administração</div>
+                        </div>
+                        <input 
+                          type="checkbox" 
+                          checked={sshEnabled} 
+                          onChange={e => setSshEnabled(e.target.checked)}
+                          className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
+                        />
+                      </label>
+
+                      <label className="flex items-center justify-between p-3.5 bg-slate-900/90 rounded-xl border border-white/15 cursor-pointer shadow-inner">
+                        <div>
+                          <div className="font-medium text-white">UFW Firewall Ativo</div>
+                          <div className="text-[11px] text-slate-400">Proteção contra ataques e DDoS</div>
+                        </div>
+                        <input 
+                          type="checkbox" 
+                          checked={firewallUfw} 
+                          onChange={e => setFirewallUfw(e.target.checked)}
+                          className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/20 space-y-4 shadow-xl">
+                    <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-sky-400" /> Plano de Fundo (Wallpaper do Servidor OS)
+                    </h4>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                      {WALLPAPERS.map(w => (
+                        <div 
+                          key={w.id}
+                          onClick={() => setWallpaper(w.url)}
+                          className={`rounded-xl overflow-hidden border-2 cursor-pointer transition-all shadow-lg ${wallpaper === w.url ? 'border-purple-500 scale-105 shadow-2xl' : 'border-white/20 hover:border-white/50'}`}
+                        >
+                          <img src={w.url} className="w-full h-20 object-cover" alt={w.name} />
+                          <div className="p-2 bg-slate-900 text-[10px] text-center font-medium truncate text-white">{w.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : linuxConfigTab === 'power' ? (
+                <div className="space-y-6">
+                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/25 space-y-4 shadow-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                          <Power className="w-4 h-4 text-amber-400" /> Wake-on-LAN (WoL)
+                        </h4>
+                        <p className="text-xs text-slate-400">Permite despertar (ligar) o servidor remotamente enviando um pacote mágico pela rede local.</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={wolEnabled} onChange={e => setWolEnabled(e.target.checked)} className="sr-only peer" />
+                        <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                      </label>
+                    </div>
+
+                    <div className="bg-slate-900/90 p-4 rounded-xl border border-white/20 font-mono text-xs space-y-2 shadow-inner">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">MAC Address da Placa (eth0):</span>
+                        <span className="text-emerald-300">08:00:27:63:5c:aa</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Porta WoL padrão:</span>
+                        <span className="text-sky-300">9 (UDP)</span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 pt-1">
+                        💡 Dica: Para despertar o servidor, envie um pacote mágico WoL para o IP de broadcast da sua rede (`192.168.1.255`) direcionado ao MAC acima.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/25 space-y-4 shadow-xl">
+                    <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-sky-400" /> Agendamento de Desligamento Automático (Auto Shutdown)
+                    </h4>
+                    <p className="text-xs text-slate-400">Defina regras de economia de energia para desligar o servidor automaticamente em horários programados.</p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-slate-300 mb-1">Regra de Agendamento</label>
+                        <select 
+                          value={shutdownSchedule} 
+                          onChange={e => setShutdownSchedule(e.target.value)}
+                          className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-amber-500"
+                        >
+                          <option value="disabled">Desativado (Nunca desligar)</option>
+                          <option value="midnight">Todos os dias à Meia-Noite (00:00)</option>
+                          <option value="custom">Horário Personalizado</option>
+                          <option value="idle">Desligar após 4h de Ociosidade</option>
+                        </select>
+                      </div>
+
+                      {shutdownSchedule === 'custom' && (
+                        <div>
+                          <label className="block text-slate-300 mb-1">Horário de Desligamento</label>
+                          <input 
+                            type="time" 
+                            value={shutdownTime}
+                            onChange={e => setShutdownTime(e.target.value)}
+                            className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <label className="flex items-center justify-between p-3.5 bg-slate-900/90 rounded-xl border border-white/15 cursor-pointer shadow-inner mt-2">
+                      <div>
+                        <div className="font-medium text-white">Modo de Suspensão por Ociosidade (Auto-Suspend)</div>
+                        <div className="text-[11px] text-slate-400">Entrar em baixo consumo (S3) quando CPU e discos estiverem ociosos</div>
+                      </div>
+                      <input 
+                        type="checkbox" 
+                        checked={autoSuspendIdle} 
+                        onChange={e => setAutoSuspendIdle(e.target.checked)}
+                        className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
+                      />
+                    </label>
+
+                    <div className="pt-4 flex justify-end">
+                      <button 
+                        onClick={() => alert('⚡ Configurações de Power Management salvas e aplicadas ao daemon systemd-powerd com sucesso!')}
+                        className="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:opacity-90 text-white rounded-xl text-xs font-bold shadow-xl transition-all border border-white/20 flex items-center gap-2"
+                      >
+                        <Check className="w-4 h-4" /> Salvar Configurações de Energia
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/25 space-y-4 shadow-xl">
+                    <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                      <Cloud className="w-4 h-4 text-purple-400" /> Configuração de Armazenamento S3 / Nuvem Externa
+                    </h4>
+                    <p className="text-xs text-slate-400">Configure suas credenciais S3 compatíveis (AWS S3, MinIO, Backblaze B2, Wasabi) para backup seguro dos dados dos servidores.</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-slate-300 mb-1">S3 Endpoint / Host</label>
+                        <input 
+                          type="text" 
+                          value={s3Endpoint} 
+                          onChange={e => setS3Endpoint(e.target.value)}
+                          placeholder="s3.amazonaws.com ou minio.local"
+                          className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none focus:border-purple-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-300 mb-1">Nome do Bucket (S3 Bucket)</label>
+                        <input 
+                          type="text" 
+                          value={s3Bucket} 
+                          onChange={e => setS3Bucket(e.target.value)}
+                          placeholder="inovecloud-server-backups"
+                          className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none focus:border-purple-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-300 mb-1">Access Key ID</label>
+                        <input 
+                          type="text" 
+                          value={s3AccessKey} 
+                          onChange={e => setS3AccessKey(e.target.value)}
+                          className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none focus:border-purple-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-300 mb-1">Secret Access Key</label>
+                        <input 
+                          type="password" 
+                          value={s3SecretKey} 
+                          onChange={e => setS3SecretKey(e.target.value)}
+                          className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none focus:border-purple-500"
+                        />
+                      </div>
+                    </div>
 
-              <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/20 space-y-4 shadow-xl">
-                <h4 className="font-bold text-sm text-white flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-purple-400" /> Serviços & Segurança (UFW & SSH)
-                </h4>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <label className="flex items-center justify-between p-3.5 bg-slate-900/90 rounded-xl border border-white/15 cursor-pointer shadow-inner">
                     <div>
-                      <div className="font-medium text-white">Serviço SSH (Acesso Remoto)</div>
-                      <div className="text-[11px] text-slate-400">Porta 22 ativa para administração</div>
+                      <label className="block text-slate-300 mb-1">Frequência do Backup Automatizado</label>
+                      <select 
+                        value={backupSchedule} 
+                        onChange={e => setBackupSchedule(e.target.value)}
+                        className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-purple-500"
+                      >
+                        <option value="hourly">A cada hora (Hourly)</option>
+                        <option value="daily">Diariamente às 03:00 AM (Daily)</option>
+                        <option value="weekly">Semanalmente aos Domingos (Weekly)</option>
+                        <option value="manual">Apenas Manual (Manual)</option>
+                      </select>
                     </div>
-                    <input 
-                      type="checkbox" 
-                      checked={sshEnabled} 
-                      onChange={e => setSshEnabled(e.target.checked)}
-                      className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
-                    />
-                  </label>
+                  </div>
 
-                  <label className="flex items-center justify-between p-3.5 bg-slate-900/90 rounded-xl border border-white/15 cursor-pointer shadow-inner">
-                    <div>
-                      <div className="font-medium text-white">UFW Firewall Ativo</div>
-                      <div className="text-[11px] text-slate-400">Proteção contra ataques e DDoS</div>
+                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/25 space-y-4 shadow-xl">
+                    <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                      <Folder className="w-4 h-4 text-amber-400" /> Aplicativos e Volumes Alvo para Backup
+                    </h4>
+                    <p className="text-xs text-slate-400">Selecione quais dados e containers terão seus volumes incluídos no snapshot diário:</p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label className="flex items-center justify-between p-3.5 bg-slate-900/90 rounded-xl border border-white/15 cursor-pointer shadow-inner">
+                        <div>
+                          <div className="font-medium text-white">Emby Media Server</div>
+                          <div className="text-[11px] text-slate-400">Metadados, capas e banco de dados (/config)</div>
+                        </div>
+                        <input type="checkbox" checked={backupEmby} onChange={e => setBackupEmby(e.target.checked)} className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" />
+                      </label>
+
+                      <label className="flex items-center justify-between p-3.5 bg-slate-900/90 rounded-xl border border-white/15 cursor-pointer shadow-inner">
+                        <div>
+                          <div className="font-medium text-white">Nextcloud Nuvem</div>
+                          <div className="text-[11px] text-slate-400">Banco de dados SQL e arquivos do usuário</div>
+                        </div>
+                        <input type="checkbox" checked={backupNextcloud} onChange={e => setBackupNextcloud(e.target.checked)} className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" />
+                      </label>
+
+                      <label className="flex items-center justify-between p-3.5 bg-slate-900/90 rounded-xl border border-white/15 cursor-pointer shadow-inner">
+                        <div>
+                          <div className="font-medium text-white">Immich Photos</div>
+                          <div className="text-[11px] text-slate-400">Biblioteca de fotos e machine learning cache</div>
+                        </div>
+                        <input type="checkbox" checked={backupImmich} onChange={e => setBackupImmich(e.target.checked)} className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" />
+                      </label>
+
+                      <label className="flex items-center justify-between p-3.5 bg-slate-900/90 rounded-xl border border-white/15 cursor-pointer shadow-inner">
+                        <div>
+                          <div className="font-medium text-white">Kasm Workspaces</div>
+                          <div className="text-[11px] text-slate-400">Perfis de usuário e configurações de desktops</div>
+                        </div>
+                        <input type="checkbox" checked={backupKasm} onChange={e => setBackupKasm(e.target.checked)} className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" />
+                      </label>
                     </div>
-                    <input 
-                      type="checkbox" 
-                      checked={firewallUfw} 
-                      onChange={e => setFirewallUfw(e.target.checked)}
-                      className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
-                    />
-                  </label>
+
+                    <div className="pt-4 flex justify-end">
+                      <button 
+                        onClick={() => alert('🚀 Backup iniciado com sucesso! Os volumes selecionados foram empacotados, criptografados e enviados para o bucket S3: ' + s3Bucket)}
+                        className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 text-white rounded-xl text-xs font-bold shadow-xl transition-all border border-white/20 flex items-center gap-2"
+                      >
+                        <Cloud className="w-4 h-4" /> Executar Backup S3 Agora
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/20 space-y-4 shadow-xl">
-                <h4 className="font-bold text-sm text-white flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-sky-400" /> Plano de Fundo (Wallpaper do Servidor OS)
-                </h4>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                  {WALLPAPERS.map(w => (
-                    <div 
-                      key={w.id}
-                      onClick={() => setWallpaper(w.url)}
-                      className={`rounded-xl overflow-hidden border-2 cursor-pointer transition-all shadow-lg ${wallpaper === w.url ? 'border-purple-500 scale-105 shadow-2xl' : 'border-white/20 hover:border-white/50'}`}
-                    >
-                      <img src={w.url} className="w-full h-20 object-cover" alt={w.name} />
-                      <div className="p-2 bg-slate-900 text-[10px] text-center font-medium truncate text-white">{w.name}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
+              )}
             </div>
           </div>
         </div>

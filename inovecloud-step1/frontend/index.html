@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InoveCloud OS - Etapa 1</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 500px; width: 100%; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        h1 { color: #38bdf8; margin-bottom: 10px; }
+        p { color: #94a3b8; }
+        .status { margin-top: 20px; padding: 10px; background: #0f172a; border-radius: 8px; font-family: monospace; font-size: 13px; color: #34d399; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>☁️ InoveCloud OS</h1>
+        <p>Etapa 1 - Frontend HTML + Backend Go + Docker</p>
+        <div id="status" class="status">Conectando ao backend...</div>
+    </div>
+
+    <script>
+        fetch('/api/health')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('status').innerText = `✅ Status: ${data.status} | Servidor: ${data.service} (${data.hostname})`;
+            })
+            .catch(err => {
+                document.getElementById('status').innerText = '❌ Erro ao conectar com o backend.';
+                document.getElementById('status').style.color = '#f87171';
+            });
+    </script>
+</body>
+</html>

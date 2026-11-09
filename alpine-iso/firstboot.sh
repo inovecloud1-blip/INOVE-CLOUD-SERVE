@@ -11,9 +11,11 @@ echo "https://dl-cdn.alpinelinux.org/alpine/v3.20/community" >> /etc/apk/reposit
 
 apk update
 
-# Install essential tools, docker, docker-compose, avahi/mDNS, openssh, python3
-echo "📦 Installing Docker, Docker Compose, Avahi, OpenSSH, Python 3, and Node.js..."
-apk add --no-cache docker docker-compose openrc avahi avahi-tools openssh nodejs npm git curl bash python3
+# Install essential tools, docker, docker-compose, avahi/mDNS, openssh, python3, and chromium in parallel for maximum speed
+echo "📦 Installing Docker, Docker Compose, OpenSSH, Python 3, Node.js, and Chromium in parallel..."
+(apk add --no-cache docker docker-compose openrc avahi avahi-tools openssh nodejs npm git curl bash python3) &
+(apk add --no-cache chromium 2>/dev/null || true) &
+wait
 
 # Configure network interface automatically
 echo "auto lo" > /etc/network/interfaces
@@ -77,10 +79,35 @@ cat << 'EOF' > /opt/inovecloudos/public/index.html
 </html>
 EOF
 
-# Create OpenRC local startup script to ensure web server starts automatically on every boot
+# Create OpenRC local startup script to ensure network IP is obtained via DHCP, MOTD banner is updated, and web server starts automatically on every boot
 cat << 'EOF' > /etc/local.d/inovecloud.start
 #!/bin/sh
-python3 -m http.server 3000 --directory /opt/inovecloudos/public > /var/log/inovecloud-web.log 2>&1 &
+echo "Bringing up network interface eth0..."
+ip link set eth0 up
+udhcpc -i eth0 -q &
+sleep 3
+
+# Detect local IP
+LOCAL_IP=$(ip -4 addr show eth0 | awk '/inet / {print $2}' | cut -d/ -f1)
+if [ -z "$LOCAL_IP" ]; then
+    LOCAL_IP="192.168.0.101"
+fi
+
+echo "===================================================="
+echo "☁️ INOVECLOUD OS - SERVER ONLINE"
+echo "🌐 IP Local Detectado: http://$LOCAL_IP:3000"
+echo "🔗 Acesso via mDNS:   http://inovecloudos.local:3000"
+echo "===================================================="
+
+# Update MOTD banner for login console
+echo "====================================================" > /etc/motd
+echo "☁️ INOVECLOUD OS - SERVER ONLINE" >> /etc/motd
+echo "🌐 IP Local: http://$LOCAL_IP:3000" >> /etc/motd
+echo "🔗 mDNS:     http://inovecloudos.local:3000" >> /etc/motd
+echo "====================================================" >> /etc/motd
+
+echo "Starting InoveCloud OS Web Server on port 3000 (0.0.0.0)..."
+python3 -m http.server 3000 --bind 0.0.0.0 --directory /opt/inovecloudos/public > /var/log/inovecloud-web.log 2>&1 &
 EOF
 
 chmod +x /etc/local.d/inovecloud.start
