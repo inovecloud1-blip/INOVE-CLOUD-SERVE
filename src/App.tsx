@@ -411,6 +411,13 @@ echo "✨ InoveCloud OS & Kasm Workspaces ready at http://$LOCAL_IP:3000"
             <TerminalIcon className="w-3.5 h-3.5 text-amber-400" /> Terminal
           </button>
           <button 
+            onClick={() => setActiveWindow({ title: 'Meu Computador • Alpine Linux XFCE (VNC GUI)', url: 'http://inovecloudos.local:5900', isVnc: true })}
+            className="px-3.5 py-1.5 bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/40 rounded-full text-xs font-semibold text-amber-200 flex items-center gap-1.5 transition-all shadow-xl backdrop-blur-xl"
+            title="Meu Computador • Interface Gráfica XFCE no Alpine Linux via VNC"
+          >
+            <Monitor className="w-3.5 h-3.5 text-amber-400" /> Meu Computador (XFCE GUI)
+          </button>
+          <button 
             onClick={() => setActiveModal('systemLogs')}
             className="px-3.5 py-1.5 bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/40 rounded-full text-xs font-semibold text-rose-200 flex items-center gap-1.5 transition-all shadow-xl backdrop-blur-xl"
             title="System Logs (Errors & Warnings)"
@@ -1945,6 +1952,50 @@ echo "✨ InoveCloud OS & Kasm Workspaces ready at http://$LOCAL_IP:3000"
                   Abrir Aplicativo <ExternalLink className="w-3.5 h-3.5" />
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ACTIVE WINDOW / VNC VIEWER MODAL */}
+      {activeWindow && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-2xl flex items-center justify-center p-4 md:p-8 animate-fadeIn">
+          <div className="bg-slate-900/90 backdrop-blur-3xl border border-white/30 rounded-3xl w-full max-w-6xl h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="h-16 px-6 bg-slate-950/90 flex items-center justify-between border-b border-white/15">
+              <div className="flex items-center gap-3">
+                <Monitor className="w-6 h-6 text-amber-400" />
+                <div>
+                  <h3 className="font-bold text-white text-base">{activeWindow.title}</h3>
+                  <div className="text-[11px] font-mono text-amber-300">{activeWindow.url}</div>
+                </div>
+              </div>
+              <button onClick={() => setActiveWindow(null)} className="p-1.5 text-slate-300 hover:text-white rounded-xl bg-white/10 border border-white/15">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden">
+              {activeWindow.isVnc ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950">
+                  <div className="w-20 h-20 rounded-3xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mb-4 shadow-2xl animate-pulse">
+                    <Monitor className="w-10 h-10 text-amber-400" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-2">Alpine Linux XFCE Desktop (VNC GUI)</h2>
+                  <p className="text-sm text-slate-300 max-w-md mb-6">Interface gráfica leve XFCE rodando no Alpine Linux via servidor VNC integrado.</p>
+                  <div className="bg-slate-900/90 border border-white/20 rounded-2xl p-4 font-mono text-xs text-amber-300 mb-6 shadow-inner">
+                    URL VNC: vnc://inovecloudos.local:5900
+                  </div>
+                  <a 
+                    href={activeWindow.url} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-2xl text-xs font-bold shadow-2xl flex items-center gap-2 border border-white/20 hover:scale-105 transition-transform"
+                  >
+                    Abrir VNC em Nova Aba <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              ) : (
+                <iframe src={activeWindow.url} className="w-full h-full border-0" title={activeWindow.title} />
+              )}
             </div>
           </div>
         </div>
